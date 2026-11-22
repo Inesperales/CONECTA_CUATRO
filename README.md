@@ -186,8 +186,8 @@ class MiBot(Player):
         return min(columnas, key=lambda c: abs(c - centro))
 ```
 
-Y dale de alta con una línea en
-[`players/custom/players.yaml`](players/custom/players.yaml):
+Y dale de alta con un segundo fichero, **con el mismo nombre que el bot**,
+`players/custom/mi_bot.yaml`:
 
 ```yaml
 players:
@@ -196,6 +196,28 @@ players:
 ```
 
 Listo: aparece en el menú de la terminal, en la web y en el torneo.
+
+> **Antes de copiar:** cambia `mi_bot` / `MiBot` / `"mi-bot"` y el emoji por los
+> de tu equipo. El nombre de `get_name()` tiene que ser único: si dos equipos
+> envían `"mi-bot"`, el segundo no pasa la revisión automática.
+
+**Cómo enviarlo (otros equipos)**
+
+1. Haz un **fork** de este repositorio y crea una rama.
+2. Añade tus **dos ficheros** en [`players/custom/`](players/custom/): `tu_bot.py`
+   y `tu_bot.yaml`. No toques nada más: como cada equipo trae sus propios
+   ficheros, varios equipos pueden enviar a la vez sin conflictos.
+3. Compruébalo en local:
+
+   ```bash
+   pip install -e ".[dev]"
+   pytest tests/test_custom_players.py
+   conecta-cuatro-torneo --repetitions 1
+   ```
+
+4. Abre un **Pull Request**. El check *Custom players* prueba tu bot (jugadas
+   legales, sin errores, partidas completas); cuando lo aprobemos y lo
+   fusionemos, entra en la web y en el siguiente torneo.
 
 **Cómo es el tablero que recibes**
 
@@ -272,7 +294,7 @@ CONECTA_CUATRO/
 │   ├── player.py        la clase Player que implementa cada bot
 │   ├── cli.py           el juego en la terminal y su leaderboard
 │   ├── tournament.py    torneos, tiempos y descalificaciones
-│   ├── manifest.py      carga los bots desde players/*/players.yaml
+│   ├── manifest.py      carga los bots desde los .yaml de players/
 │   ├── elo.py           cálculo del Elo
 │   └── bots/            estrategias reutilizables (minimax, greedy, random)
 ├── players/

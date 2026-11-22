@@ -7,10 +7,11 @@ manifest. There are two directories, each with its own manifest:
 | Directory | Manifest | Holds |
 |-----------|----------|-------|
 | [`builtin/`](builtin/) | [`builtin/players.yaml`](builtin/players.yaml) | the reference ladder that ships with the project |
-| [`custom/`](custom/) | [`custom/players.yaml`](custom/players.yaml) | every player submitted by pull request |
+| [`custom/`](custom/) | one `custom/<bot>.yaml` per submission | every player submitted by pull request |
 
-A submission goes in `custom/` and touches nothing else, so two submissions never
-collide in the same manifest and none of them can change the reference ladder.
+A submission adds two new files to `custom/` — `<bot>.py` and `<bot>.yaml` — and
+touches nothing else, so two submissions never collide in a shared file and none
+of them can change the reference ladder.
 
 A player file declares **identity and configuration**. The strategies themselves
 are reusable and live in [`src/conecta_cuatro/bots/`](../src/conecta_cuatro/bots/), so
@@ -36,8 +37,8 @@ top of the ladder.
 ## Add your own
 
 Copy [`builtin/random.py`](builtin/random.py) into `custom/`, rename the class,
-implement `choose_move`, add one entry to
-[`custom/players.yaml`](custom/players.yaml), and open a Pull Request.
+implement `choose_move`, add a `custom/<your_bot>.yaml` manifest next to it (see
+[`custom/README.md`](custom/README.md)), and open a Pull Request.
 
 The step-by-step walkthrough, with the code to copy and the acceptance criteria,
 is in the docs: **[Submit a player](https://conecta-cuatro.readthedocs.io/en/latest/en/game/upload-a-bot/submit-a-player/)**

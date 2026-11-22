@@ -5,7 +5,7 @@ Para que tu jugador se publique y evalúe con el resto de jugadores, debes subir
 ```mermaid
 flowchart LR
     F["1 · Fork<br/>y rama"] --> A["2 · Tu archivo<br/>players/custom/"]
-    A --> M["3 · Una línea<br/>en players.yaml"]
+    A --> M["3 · Su manifiesto<br/>tu_bot.yaml"]
     M --> V["4 · Verificar<br/>en local"]
     V --> PR["5 · Abrir<br/>el PR"]
 ```
@@ -38,15 +38,20 @@ Crea `players/custom/<tu_bot>.py`. Lo más fácil es empezar por el
 
 ---
 
-## Paso 3 — Regístralo en el manifiesto
+## Paso 3 — Regístralo con su manifiesto
 
-Añade **exactamente una entrada** a
-[`players/custom/players.yaml`](https://github.com/grabifv/CONECTA_CUATRO/blob/main/players/custom/players.yaml):
+Crea, junto a tu bot, un fichero **con el mismo nombre** y extensión `.yaml`:
+`players/custom/corner_bot.yaml`.
 
 ```yaml
+players:
   - file: corner_bot.py
     class: CornerBot
 ```
+
+Se cargan todos los `.yaml` de `players/custom/`. Cada equipo trae **sus propios
+ficheros** y no edita ninguno compartido, así que varios equipos pueden enviar
+su bot a la vez sin conflictos.
 
 Solo hay **dos** campos que escribir:
 
@@ -105,7 +110,7 @@ Tu PR se fusiona solo si pasa **los tres**:
 
 | | Criterio | Qué se mira |
 |---|---|---|
-| 1 | **Diseño** | un archivo en `players/custom/`, una línea de manifiesto, hereda de `Player`, nombre único, mínimo y legible |
+| 1 | **Diseño** | un `.py` y su `.yaml` en `players/custom/`, hereda de `Player`, nombre único, mínimo y legible |
 | 2 | **Corrección** | CI en verde; devuelve jugadas legales; nunca muta el estado; no falla ni agota el tiempo |
 | 3 | **Sin malware** | quien revisa lee el código: nada de red, sistema de archivos, subprocesos, `eval`/`exec` ni ofuscación |
 

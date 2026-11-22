@@ -28,13 +28,17 @@ which is exactly why review is the security and correctness gate.
    minimal example from the
    [Player API docs](https://conecta-cuatro.readthedocs.io/en/latest/en/game/upload-a-bot/player-api/).
 
-3. **Register it** — add exactly one entry to
-   [`players/custom/players.yaml`](players/custom/players.yaml):
+3. **Register it** — add a manifest with the same name as your file,
+   `players/custom/<your_bot>.yaml`:
 
    ```yaml
+   players:
      - file: my_bot.py
        class: MyBot
    ```
+
+   Every `*.yaml` in `players/custom/` is loaded, and no submission edits a shared
+   file, so several teams can submit at the same time without merge conflicts.
 
 4. **Verify locally**, then open the PR:
 
@@ -65,7 +69,7 @@ which is exactly why review is the security and correctness gate.
 
 A PR is merged only if it passes **all** of these:
 
-1. **Design** — one file in `players/custom/`, one manifest line, subclasses
+1. **Design** — a `.py` and its `.yaml` in `players/custom/`, nothing else, subclasses
    `Player`, unique `name`, minimal and readable.
 2. **Correctness** — CI is green; the bot returns legal moves and never mutates
    state; it does not error or time out against the reference bots.

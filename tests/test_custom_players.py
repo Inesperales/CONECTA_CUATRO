@@ -1,7 +1,8 @@
 """Contract tests for the submitted players in ``players/custom/``.
 
-Discovery is **automatic**: this module loads ``players/custom/players.yaml`` and
-parametrizes every check over whatever it admits, so a new submission is covered
+Discovery is **automatic**: this module loads every manifest in ``players/custom/``
+(one ``<bot>.yaml`` per submission) and parametrizes every check over whatever they
+admit, so a new submission is covered
 the moment its manifest line lands — there is nothing here to edit per player.
 
 These tests deliberately live **outside** the main suite. ``tests.yml`` skips this
@@ -75,8 +76,7 @@ def _load_submitted() -> tuple[Registry | None, Exception | None]:
 
 _REGISTRY, _LOAD_ERROR = _load_submitted()
 
-#: Names discovered in the manifest. Empty when the manifest is empty (no
-#: submissions yet) or failed to load; the parametrized tests then have nothing to
+#: Names discovered in the manifests. Empty when there are no submissions yet or failed to load; the parametrized tests then have nothing to
 #: run and ``test_the_manifest_loads`` reports why.
 CUSTOM_NAMES = sorted(_REGISTRY.names()) if _REGISTRY is not None else []
 
@@ -89,7 +89,7 @@ def _kind(name: str) -> type[Player]:
 
 def test_the_manifest_loads():
     """Every admitted submission must import, construct and declare an identity."""
-    assert _LOAD_ERROR is None, f"players/custom/players.yaml did not load: {_LOAD_ERROR}"
+    assert _LOAD_ERROR is None, f"the manifests in players/custom/ did not load: {_LOAD_ERROR}"
 
 
 @pytest.mark.parametrize("name", CUSTOM_NAMES)

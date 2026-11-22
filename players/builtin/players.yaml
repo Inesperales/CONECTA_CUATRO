@@ -1,12 +1,12 @@
 # Conecta Cuatro Arena — the BUILT-IN player manifest.
 #
 # This file admits the reference players that ship with the project. It is
-# maintained by the repository owner. A submission does NOT go here: it goes in
-# ../custom/players.yaml, next to its own .py file.
+# maintained by the repository owner. A submission does NOT go here: it adds its
+# own manifest, ../custom/<bot>.yaml, next to its own ../custom/<bot>.py.
 #
 # Discovery happens ONLY through a manifest — nothing auto-scans a folder. When
 # someone opens a PR to add a bot, the reviewer sees, in one diff, both the new
-# file and the single line that admits it. The review IS the security gate.
+# file and the manifest that admits it. The review IS the security gate.
 #
 # A manifest is an *admission list*: which file, and which class in it. A
 # player's name, authors, description and icon are declared by the class itself

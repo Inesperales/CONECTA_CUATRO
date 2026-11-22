@@ -35,7 +35,7 @@ pip install -e ".[dev]"
 from conecta_cuatro import game
 from conecta_cuatro.manifest import load_players
 
-registry = load_players()          # lee los dos manifiestos players.yaml
+registry = load_players()          # lee todos los manifiestos de players/
 hard = registry.get("hard")
 random_bot = registry.get("random")
 
