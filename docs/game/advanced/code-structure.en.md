@@ -24,7 +24,7 @@ CONECTA_CUATRO/
 | `game.py` | the pure rules: `legal_moves`, `apply_move`, `is_terminal`, `winner`, `is_draw` |
 | `player.py` | the abstract `Player` class — [the API other people implement](../upload-a-bot/player-api.md) |
 | `registry.py` | in-memory catalogue, name → `Player` |
-| `manifest.py` | loads the `players.yaml` manifests into the registry |
+| `manifest.py` | loads the `.yaml` manifests in `players/` into the registry |
 | `tournament.py` | formats, timing and results |
 | `elo.py` | per-game Elo rating |
 | `cli.py` | the terminal game (`conecta-cuatro`) and its local leaderboard |
@@ -38,7 +38,7 @@ CONECTA_CUATRO/
 flowchart TB
     game["game.py<br/>rules"] --> players["players/*/*.py"]
     abc["player.py<br/>abstract Player class"] --> players
-    players --> manifest["players.yaml"]
+    players --> manifest["*.yaml"]
     manifest --> loader["manifest.py"]
     loader --> registry["registry.py"]
     game --> tournament["tournament.py"]

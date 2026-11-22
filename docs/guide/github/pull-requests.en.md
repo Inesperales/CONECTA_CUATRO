@@ -110,21 +110,21 @@ or just replace this with a description of your change.
 
 ### Submission checklist
 
-- [ ] Added a single file `players/custom/<my_bot>.py`.
+- [ ] Added `players/custom/<my_bot>.py` and its manifest `players/custom/<my_bot>.yaml` (`file` and `class`).
 - [ ] The class subclasses `conecta_cuatro.player.Player`.
 - [ ] `get_name`, `get_authors`, `get_description` and `get_icon` are implemented.
 - [ ] The icon is a **single** emoji, and not already used by another player.
 - [ ] The name is **unique** — no admitted player already uses it.
 - [ ] `choose_move(self, state) -> int` returns a **legal** column.
 - [ ] Does **not** mutate the `state` it receives.
-- [ ] Added **exactly one** entry to `players/custom/players.yaml` (`file` and `class`).
+- [ ] Touched no other file (in particular, no shared manifest).
 - [ ] No external dependencies beyond the standard library and `conecta_cuatro`.
 - [ ] No network / filesystem / subprocess / `eval` / `exec`.
 - [ ] Runs locally: `pytest tests/test_custom_players.py` is green and `conecta-cuatro-torneo --no-subprocess` works.
 
 ### Maintainer review (acceptance criteria)
 
-- [ ] **Design** — one file in `players/custom/` + one manifest line, minimal.
+- [ ] **Design** — one `.py` + its `.yaml` in `players/custom/`, minimal.
 - [ ] **Correctness** — CI green; legal moves; no mutation; no errors/timeouts vs
       the reference bots.
 - [ ] **No malware** — code read in full; nothing suspicious.

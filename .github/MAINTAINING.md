@@ -83,13 +83,13 @@ Every submission runs untrusted-but-reviewed code. Your review is the security
 and correctness gate. Check the acceptance criteria from
 [submit-a-player](https://conecta-cuatro.readthedocs.io/en/latest/game/upload-a-bot/submit-a-player/):
 
-1. **Design** — one file in `players/custom/`, one line in
-   `players/custom/players.yaml`, subclasses `Player`, unique `name`. A
-   submission must not touch `players/builtin/`.
+1. **Design** — `players/custom/<bot>.py` plus its manifest
+   `players/custom/<bot>.yaml`, nothing else; subclasses `Player`, unique `name`.
+   A submission must not touch `players/builtin/` or another team's files.
 2. **Correctness** — CI green; legal moves; no mutation of `state`; no
    errors/timeouts against the reference bots. The **Custom players** workflow is
-   the one that judges the submission: it discovers every bot in
-   `players/custom/players.yaml` and checks identity, legal moves and full games
+   the one that judges the submission: it discovers every bot admitted by a
+   `players/custom/*.yaml` manifest and checks identity, legal moves and full games
    against `random`. The **Tests** workflow deliberately skips submitted bots, so
    a broken one fails only its own check — never an unrelated pull request.
 3. **No malware** — read the code in full. Reject on sight: network, filesystem,

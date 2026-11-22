@@ -6,8 +6,8 @@ available to Pyodide, we bundle it into ``web/py.zip``:
 
     py.zip
     ├── conecta_cuatro/        (the installable package, copied from src/)
-    ├── players/         (copied whole: builtin/ and custom/, each with its
-    │                     own players.yaml manifest)
+    ├── players/         (copied whole: builtin/players.yaml and its players,
+    │                     custom/ with one <bot>.yaml manifest per submission)
     └── webglue.py       (the JS<->Python bridge)
 
 We also copy ``results/leaderboard.json`` next to the page so the scoreboard can
@@ -49,7 +49,7 @@ def main() -> int:
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
     )
     # 2. Player files and their manifests. Copied as a tree: each origin
-    #    directory carries its own players.yaml, and the loader resolves a bare
+    #    manifest sits next to its players, and the loader resolves a bare
     #    filename next to the manifest that names it.
     shutil.copytree(
         REPO_ROOT / "players",

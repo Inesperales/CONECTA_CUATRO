@@ -5,7 +5,7 @@ For your player to be published and evaluated alongside the rest, you have to op
 ```mermaid
 flowchart LR
     F["1 · Fork<br/>and branch"] --> A["2 · Your file<br/>players/custom/"]
-    A --> M["3 · One line<br/>in players.yaml"]
+    A --> M["3 · Its manifest<br/>your_bot.yaml"]
     M --> V["4 · Verify<br/>locally"]
     V --> PR["5 · Open<br/>the PR"]
 ```
@@ -38,15 +38,20 @@ Create `players/custom/<your_bot>.py`. The easiest start is the
 
 ---
 
-## Step 3 — Register it in the manifest
+## Step 3 — Register it with its manifest
 
-Add **exactly one entry** to
-[`players/custom/players.yaml`](https://github.com/grabifv/CONECTA_CUATRO/blob/main/players/custom/players.yaml):
+Next to your bot, create a file **with the same name** and a `.yaml` extension:
+`players/custom/corner_bot.yaml`.
 
 ```yaml
+players:
   - file: corner_bot.py
     class: CornerBot
 ```
+
+Every `.yaml` in `players/custom/` is loaded. Each team brings **its own files**
+and edits no shared one, so several teams can submit at the same time without
+merge conflicts.
 
 There are only **two** fields to write:
 
@@ -105,7 +110,7 @@ Your PR is merged only if it passes **all three**:
 
 | | Criterion | What is checked |
 |---|---|---|
-| 1 | **Design** | one file in `players/custom/`, one manifest line, subclasses `Player`, unique name, minimal and readable |
+| 1 | **Design** | a `.py` and its `.yaml` in `players/custom/`, subclasses `Player`, unique name, minimal and readable |
 | 2 | **Correctness** | CI is green; returns legal moves; never mutates state; does not error or time out |
 | 3 | **No malware** | the reviewer reads the code: no network, filesystem, subprocess, `eval`/`exec` or obfuscation |
 

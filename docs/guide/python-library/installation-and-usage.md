@@ -57,7 +57,7 @@ shell), luego importa y usa la librería:
 from conecta_cuatro import game
 from conecta_cuatro.manifest import load_players
 
-registry = load_players()            # lee players.yaml
+registry = load_players()            # lee los manifiestos de players/
 hard = registry.get("hard")
 
 state = game.new_board()             # 6 x 7, empty

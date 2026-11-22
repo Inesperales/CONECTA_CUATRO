@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 
 from conecta_cuatro import game
 from conecta_cuatro.bots.smart_minimax import SmartMinimaxBot
@@ -74,10 +75,13 @@ def _require_registry() -> Registry:
 def init(base_dir: str) -> str:
     """Load players from the manifests under ``base_dir`` and return them as JSON."""
     global _REGISTRY
-    _REGISTRY = load_players({
-        BUILTIN: f"{base_dir}/players/{BUILTIN}/players.yaml",
-        CUSTOM: f"{base_dir}/players/{CUSTOM}/players.yaml",
-    })
+    manifests = {BUILTIN: f"{base_dir}/players/{BUILTIN}/players.yaml"}
+    # One manifest per submission, so the custom directory is passed whole. A zip
+    # stores no empty directories: with no submissions yet it may be absent.
+    custom_dir = Path(base_dir) / "players" / CUSTOM
+    if custom_dir.is_dir():
+        manifests[CUSTOM] = str(custom_dir)
+    _REGISTRY = load_players(manifests)
     return players_json()
 
 

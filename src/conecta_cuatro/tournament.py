@@ -1548,7 +1548,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--custom-manifest", default=str(CUSTOM_MANIFEST),
-        help="Manifest admitting submitted players.",
+        help="Manifest admitting submitted players: a file, or a directory "
+        "whose *.yaml files are all loaded (default: players/custom/).",
     )
     parser.add_argument("--out", default="results/leaderboard.json")
     parser.add_argument(

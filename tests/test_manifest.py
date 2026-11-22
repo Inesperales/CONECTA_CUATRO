@@ -53,11 +53,63 @@ def test_parse_real_builtin_manifest_admits_the_reference_players():
     assert all(e.file.endswith(".py") for e in entries)
 
 
-def test_the_custom_manifest_exists_and_parses():
-    """Submissions land here. It ships empty, and an empty list is not an error."""
-    from conecta_cuatro.manifest import CUSTOM_MANIFEST
+def test_every_submitted_manifest_parses():
+    """Submissions land in players/custom/, one manifest each. None is not an error."""
+    from conecta_cuatro.manifest import CUSTOM_MANIFEST, manifest_files
 
-    assert isinstance(parse_manifest(CUSTOM_MANIFEST), list)
+    assert CUSTOM_MANIFEST.is_dir()
+    for manifest in manifest_files(CUSTOM_MANIFEST):
+        assert isinstance(parse_manifest(manifest), list)
+
+
+def _submit(players_dir, stem: str, name: str):
+    """Add one submission to ``players_dir`` the way a team does: <stem>.py + <stem>.yaml."""
+    cls = stem.title().replace("_", "")
+    source = GOOD_PLAYER.replace("class Tiny", f"class {cls}").replace('"Tiny"', f'"{name}"')
+    (players_dir / f"{stem}.py").write_text(textwrap.dedent(source), encoding="utf-8")
+    (players_dir / f"{stem}.yaml").write_text(
+        f"players:\n  - file: {stem}.py\n    class: {cls}\n", encoding="utf-8"
+    )
+
+
+def test_a_directory_loads_every_manifest_in_it_sorted(tmp_path):
+    """One manifest per submission: two teams never edit the same file."""
+    custom = tmp_path / "players" / "custom"
+    custom.mkdir(parents=True)
+    _submit(custom, "zorro", "zorro")
+    _submit(custom, "aguila", "aguila")
+    (custom / "README.md").write_text("not a manifest", encoding="utf-8")
+
+    reg = load_players({"custom": custom}, registry=Registry(), strict=True)
+    assert reg.names() == ["aguila", "zorro"]  # by file name, not filesystem order
+    assert all(reg.origin(n) == "custom" for n in reg.names())
+
+
+def test_an_empty_directory_admits_nobody(tmp_path):
+    reg = load_players({"custom": tmp_path}, registry=Registry(), strict=True)
+    assert reg.names() == []
+
+
+def test_one_malformed_manifest_does_not_hide_the_others(tmp_path, capsys):
+    custom = tmp_path / "players" / "custom"
+    custom.mkdir(parents=True)
+    _submit(custom, "aguila", "aguila")
+    (custom / "roto.yaml").write_text("players: 3\n", encoding="utf-8")
+
+    reg = load_players({"custom": custom}, registry=Registry(), strict=False)
+    assert reg.names() == ["aguila"]
+    assert "roto.yaml" in capsys.readouterr().err
+    with pytest.raises(ManifestError):
+        load_players({"custom": custom}, registry=Registry(), strict=True)
+
+
+def test_two_submissions_with_the_same_name_are_rejected(tmp_path):
+    custom = tmp_path / "players" / "custom"
+    custom.mkdir(parents=True)
+    _submit(custom, "aguila", "mi-bot")
+    _submit(custom, "zorro", "mi-bot")
+    with pytest.raises(ManifestError, match="already registered"):
+        load_players({"custom": custom}, registry=Registry(), strict=True)
 
 
 def test_both_manifests_load_into_one_registry_tagged_by_origin():

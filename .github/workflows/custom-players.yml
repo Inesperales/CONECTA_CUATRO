@@ -5,8 +5,8 @@ name: Custom players
 # that every other pull request depends on. That is also why pyproject excludes
 # players/custom/ from the repo-wide ruff and mypy runs and re-checks it here.
 #
-# The suite discovers players from players/custom/players.yaml, so a new bot is
-# covered as soon as its manifest line lands — there is nothing to add here.
+# The suite discovers players from every players/custom/*.yaml, so a new bot is
+# covered as soon as its manifest lands — there is nothing to add here.
 on:
   push:
     branches: [main]

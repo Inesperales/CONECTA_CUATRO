@@ -3,20 +3,23 @@
 Players are discovered from **explicit, human-edited manifests** — never by
 auto-scanning a folder. This is a deliberate design choice: when someone opens a
 PR to add a bot, the reviewer sees, in a single diff, both the new file and the
-one line that admits it. That legibility *is* the security gate; auto-importing a
+manifest that admits it. That legibility *is* the security gate; auto-importing a
 directory would hide what is being admitted and would run a stranger's top-level
 code merely to discover it.
 
-There are **two** manifests, each next to the players it admits::
+Manifests live next to the players they admit::
 
     players/
       builtin/players.yaml   the reference ladder that ships with the project
-      custom/players.yaml    everything submitted by pull request
+      custom/<bot>.yaml      one per submission, next to its own <bot>.py
 
-The split is not cosmetic. It keeps a submission's diff inside ``custom/``, so no
-two submissions collide in the same manifest and none of them can touch the
-reference ladder. It also tells the tournament which players are which, which is
-what decides how many roster copies each one is entered with (see
+Every ``*.yaml`` in ``players/custom/`` is a manifest. A submission therefore adds
+two new files of its own and edits nothing shared, so two submissions in flight at
+the same time never conflict with each other and none of them can touch the
+reference ladder. Admission is still explicit: a ``.py`` with no manifest naming
+it is never imported, and the reviewer sees the file and its manifest in the same
+diff. The builtin/custom split also tells the tournament which players are which,
+which is what decides how many roster copies each one is entered with (see
 :data:`~conecta_cuatro.tournament.BUILTIN_PLAYER_COPIES` and
 :data:`~conecta_cuatro.tournament.CUSTOM_PLAYER_COPIES`).
 
@@ -36,7 +39,7 @@ drift. The manifest answers "is this admitted?"; the class answers "what is it?"
 Path resolution for ``file``:
 
 * A bare filename (e.g. ``random_bot.py``) is resolved **next to its own
-  manifest**, so an entry in ``players/custom/players.yaml`` names a file in
+  manifest**, so an entry in ``players/custom/my_bot.yaml`` names a file in
   ``players/custom/``.
 * A path with a separator (e.g. ``community/foo/bar.py``) is resolved relative
   to the repo root.
@@ -69,9 +72,13 @@ BUILTIN = "builtin"
 CUSTOM = "custom"
 #: The manifest admitting the reference ladder.
 BUILTIN_MANIFEST = PLAYERS_DIR / BUILTIN / "players.yaml"
-#: The manifest admitting submitted players.
-CUSTOM_MANIFEST = PLAYERS_DIR / CUSTOM / "players.yaml"
-#: Every manifest, as ``origin label -> path``, in load order.
+#: The directory of submitted players. Every ``*.yaml`` in it is a manifest (one
+#: per submission), so this is passed wherever a manifest path is accepted.
+CUSTOM_MANIFEST = PLAYERS_DIR / CUSTOM
+#: File suffixes recognised as manifests when a directory is given.
+MANIFEST_SUFFIXES = (".yaml", ".yml")
+#: Every manifest source, as ``origin label -> path``, in load order. A path may
+#: be a single manifest file or a directory of them.
 DEFAULT_MANIFESTS: dict[str, Path] = {
     BUILTIN: BUILTIN_MANIFEST,
     CUSTOM: CUSTOM_MANIFEST,
@@ -125,6 +132,22 @@ def parse_manifest(manifest_path: str | Path) -> list[ManifestEntry]:
         except KeyError as exc:
             raise ManifestError(f"players[{i}] is missing required field {exc}") from exc
     return entries
+
+
+def manifest_files(source: str | Path) -> list[Path]:
+    """Return the manifest files ``source`` stands for.
+
+    A file is itself. A directory stands for every ``*.yaml``/``*.yml`` directly
+    inside it, sorted by name so the load order (and so the roster order) does not
+    depend on the filesystem. A missing path is returned as-is, so that
+    :func:`parse_manifest` reports it.
+    """
+    path = Path(source)
+    if path.is_dir():
+        return sorted(
+            p for p in path.iterdir() if p.is_file() and p.suffix in MANIFEST_SUFFIXES
+        )
+    return [path]
 
 
 def _resolve_file(file: str, players_dir: Path, repo_root: Path) -> Path:
@@ -226,8 +249,10 @@ def load_players(
     Args:
         manifests: ``origin label -> manifest path``, loaded in order; the label
             is recorded on each player it admits (see
-            :meth:`~conecta_cuatro.registry.Registry.origin`). A bare path is accepted
-            as shorthand for a single unlabelled manifest.
+            :meth:`~conecta_cuatro.registry.Registry.origin`). A path may be a
+            manifest file or a directory, which stands for every ``*.yaml`` in it
+            (see :func:`manifest_files`). A bare path is accepted as shorthand
+            for a single unlabelled source.
         players_dir: directory used to resolve bare filenames. Defaults to each
             manifest's own directory.
         registry: registry to populate; defaults to the global
@@ -248,8 +273,9 @@ def load_players(
 
     if isinstance(manifests, (str, Path)):
         manifests = {"": manifests}
-    for origin, manifest_path in manifests.items():
-        _load_one(manifest_path, players_dir, registry, origin, strict=strict)
+    for origin, source in manifests.items():
+        for manifest_path in manifest_files(source):
+            _load_one(manifest_path, players_dir, registry, origin, strict=strict)
     return registry
 
 
@@ -268,7 +294,15 @@ def _load_one(
     here = manifest.parent
     repo_root = here.parent.parent if here.parent.name == PLAYERS_DIR.name else here
     players_dir = here if players_dir is None else Path(players_dir)
-    entries = parse_manifest(manifest)
+    try:
+        entries = parse_manifest(manifest)
+    except ManifestError as exc:
+        # With one manifest per submission, one malformed file must not hide
+        # every other submission (the same rule as for a broken player below).
+        if strict:
+            raise
+        print(f"[manifest] skipping {manifest}: {exc}", file=sys.stderr)
+        return
 
     for entry in entries:
         label = f"{entry.file}:{entry.cls}"
