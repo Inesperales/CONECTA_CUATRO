@@ -151,92 +151,282 @@ supere.
 
 ## 🛠️ Crea tu propio bot
 
-Un bot es **una clase con un método**: recibe el tablero y devuelve la columna
-donde jugar (empezando en 0).
+¿Eres de otro equipo y quieres meter tu bot en el torneo? Sigue estos pasos.
+Solo vas a **crear dos ficheros**; no tienes que tocar nada más del proyecto.
+
+```text
+players/custom/
+├── zorro.py      tu bot: una clase con un método que elige la columna
+└── zorro.yaml    su alta: dice qué fichero y qué clase cargar
+```
+
+> En los ejemplos el bot se llama **zorro**. Sustituye `zorro` / `Zorro` por el
+> nombre de tu equipo en todo lo que copies.
+
+### Paso 1 · Haz un fork y prepara tu copia
+
+1. En GitHub, pulsa **Fork** (arriba a la derecha) para tener tu propia copia del
+   repositorio.
+2. Clona **tu** fork y crea una rama para tu bot:
+
+   ```bash
+   git clone https://github.com/TU_USUARIO/CONECTA_CUATRO.git
+   cd CONECTA_CUATRO
+   git switch -c bot-zorro
+   ```
+
+3. Crea el entorno e instala el proyecto con las herramientas de pruebas
+   (en Windows, activa con `.venv\Scripts\activate`):
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -e ".[dev]"
+   ```
+
+### Paso 2 · Elige un nombre
+
+Antes de escribir código, mira qué hay ya en
+[`players/custom/`](players/custom/) y elige:
+
+| Qué | Ejemplo | Regla |
+|---|---|---|
+| Nombre de los ficheros | `zorro.py`, `zorro.yaml` | minúsculas y `_`; que no existan ya |
+| Nombre de la clase | `Zorro` | el mismo nombre en `CamelCase` |
+| `get_name()` | `"zorro"` | **único** entre todos los bots |
+| `get_icon()` | `"🦊"` | **un solo emoji**, que no use otro bot |
+
+### Paso 3 · Escribe tu bot (`players/custom/zorro.py`)
+
+Copia **una** de las dos plantillas.
+
+<details open>
+<summary><b>Plantilla A · Bot sencillo</b> (escribes tú la estrategia completa)</summary>
 
 ```python
-# players/custom/mi_bot.py
+"""Bot del equipo Zorro para Conecta Cuatro."""
+
 from conecta_cuatro import game
 from conecta_cuatro.player import Player
 
 
-class MiBot(Player):
+class Zorro(Player):
+    """Gana si puede, tapa si debe y, si no, juega lo más al centro posible."""
+
+    # ---- 1. Identidad: cambia estos cuatro datos ---------------------------
+
     @classmethod
     def get_name(cls) -> str:
-        return "mi-bot"                     # único entre todos los bots
+        return "zorro"  # único entre todos los bots; minúsculas y guiones
 
     @classmethod
     def get_authors(cls) -> list[str]:
-        return ["Tu nombre"]
+        return ["Ana García", "Luis Pérez"]  # los miembros del equipo
 
     @classmethod
     def get_description(cls) -> str:
-        return "Gana si puede; si no, juega lo más al centro posible."
+        return "Gana si puede, tapa si debe y, si no, juega al centro."
 
     @classmethod
     def get_icon(cls) -> str:
-        return "🦊"                         # un solo emoji
+        return "🦊"  # un solo emoji que no use otro bot
+
+    # ---- 2. Estrategia: devuelve la columna donde jugar (empieza en 0) -----
 
     def choose_move(self, state: game.State) -> int:
-        columnas = game.legal_moves(state)
-        for c in columnas:                  # ¿alguna jugada gana ya?
-            if game.winner(game.apply_move(state, c)) is not None:
+        columnas = game.legal_moves(state)  # columnas con hueco
+        yo = game.current_player(state)  # 1 o 2: tu ficha
+        rival = game.other(yo)
+
+        # a) Si alguna jugada gana ya, hazla.
+        for c in columnas:
+            if game.winner(game.apply_move(state, c)) == yo:
                 return c
+
+        # b) Si el rival ganaría jugando en c, tápala.
+        #    (Se simula poniendo SU ficha: se le pasa el tablero como si fuera su turno.)
+        for c in columnas:
+            fila = game.landing_row(state, c)
+            if fila is None:
+                continue
+            simulado = [list(f) for f in state]  # copia: nunca toques `state`
+            simulado[fila][c] = rival
+            if game.winner(simulado) == rival:
+                return c
+
+        # c) Si no, la columna más cercana al centro.
         centro = len(state[0]) // 2
         return min(columnas, key=lambda c: abs(c - centro))
 ```
 
-Y dale de alta con un segundo fichero, **con el mismo nombre que el bot**,
-`players/custom/mi_bot.yaml`:
+</details>
+
+<details>
+<summary><b>Plantilla B · Bot con minimax</b> (la búsqueda ya está hecha; tú solo puntúas el tablero)</summary>
+
+```python
+"""Bot del equipo Búho: minimax con una evaluación propia."""
+
+from conecta_cuatro import game
+from conecta_cuatro.bots import MinimaxBot
+
+#: Jugadas que mira hacia delante. Más = más fuerte, pero más lento:
+#: tienes 2 segundos para TODA la partida (prueba 4-6).
+PROFUNDIDAD = 4
+
+
+class Buho(MinimaxBot):
+    """Minimax con poda alfa-beta; solo hay que escribir `evaluate`."""
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "buho"
+
+    @classmethod
+    def get_authors(cls) -> list[str]:
+        return ["Equipo Búho"]
+
+    @classmethod
+    def get_description(cls) -> str:
+        return f"Minimax a {PROFUNDIDAD} jugadas; prefiere las fichas del centro."
+
+    @classmethod
+    def get_icon(cls) -> str:
+        return "🦉"
+
+    @classmethod
+    def create(cls, seed: int) -> "Buho":
+        return cls(depth=PROFUNDIDAD, seed=seed)
+
+    def evaluate(self, state: game.State, player: int) -> float:
+        """Lo bueno que es `state` para `player` (positivo = bueno).
+
+        La búsqueda ya detecta sola las victorias y derrotas que ve; esto solo
+        desempata el resto. Lee el tablero, no lo modifiques.
+        """
+        centro = len(state[0]) // 2
+        puntos = 0.0
+        for fila in state:
+            for c, casilla in enumerate(fila):
+                peso = len(state[0]) - abs(c - centro)  # más peso cerca del centro
+                if casilla == player:
+                    puntos += peso
+                elif casilla != 0:
+                    puntos -= peso
+        return puntos
+```
+
+Si usas esta plantilla, el fichero se llama `buho.py` y la clase `Buho`:
+cámbialos por los tuyos igual que en la A.
+
+</details>
+
+**Lo que tu bot recibe y debe devolver**
+
+- `state` es el tablero: una lista de filas, de **arriba abajo**. Cada casilla
+  vale `0` (vacía), `1` (🔴, empieza) o `2` (🟡).
+- Tu ficha es `game.current_player(state)`.
+- Devuelve un `int`: la **columna**, empezando en `0`, que no esté llena.
+- **No modifiques `state`.** Para probar jugadas usa `game.apply_move(state, c)`,
+  que devuelve un tablero nuevo.
+- No des por hecho que el tablero mide 6×7: usa `len(state)` y `len(state[0])`.
+
+Funciones útiles de `conecta_cuatro.game`:
+
+| Función | Qué hace |
+|---|---|
+| `legal_moves(state)` | lista de columnas donde se puede jugar |
+| `current_player(state)` | `1` o `2`: a quién le toca |
+| `other(player)` | la ficha del rival |
+| `apply_move(state, c)` | tablero nuevo tras jugar en `c` |
+| `landing_row(state, c)` | fila donde caería la ficha (`None` si está llena) |
+| `winner(state)` | `1`, `2` o `None` |
+| `is_terminal(state)` | `True` si la partida ha terminado |
+| `render(state)` | el tablero como texto, para depurar con `print` |
+
+### Paso 4 · Dale de alta (`players/custom/zorro.yaml`)
+
+Crea este fichero, **con el mismo nombre que tu bot**, junto a él:
 
 ```yaml
 players:
-  - file: mi_bot.py
-    class: MiBot
+  - file: zorro.py     # tu fichero .py
+    class: Zorro       # tu clase
 ```
 
-Listo: aparece en el menú de la terminal, en la web y en el torneo.
+Sin este fichero tu bot no se carga. Como cada equipo tiene el suyo, varios
+equipos pueden enviar a la vez **sin conflictos**.
 
-> **Antes de copiar:** cambia `mi_bot` / `MiBot` / `"mi-bot"` y el emoji por los
-> de tu equipo. El nombre de `get_name()` tiene que ser único: si dos equipos
-> envían `"mi-bot"`, el segundo no pasa la revisión automática.
+### Paso 5 · Pruébalo en tu ordenador
 
-**Cómo enviarlo (otros equipos)**
+```bash
+pytest tests/test_custom_players.py
+```
 
-1. Haz un **fork** de este repositorio y crea una rama.
-2. Añade tus **dos ficheros** en [`players/custom/`](players/custom/): `tu_bot.py`
-   y `tu_bot.yaml`. No toques nada más: como cada equipo trae sus propios
-   ficheros, varios equipos pueden enviar a la vez sin conflictos.
-3. Compruébalo en local:
+Comprueba tu bot en muchos tableros: que se carga, que sus jugadas son legales,
+que no modifica el tablero y que acaba partidas contra `random`. Tiene que salir
+todo en verde (`passed`).
 
-   ```bash
-   pip install -e ".[dev]"
-   pytest tests/test_custom_players.py
-   conecta-cuatro-torneo --repetitions 1
-   ```
+```bash
+conecta-cuatro-torneo --repetitions 1
+```
 
-4. Abre un **Pull Request**. El check *Custom players* prueba tu bot (jugadas
-   legales, sin errores, partidas completas); cuando lo aprobemos y lo
-   fusionemos, entra en la web y en el siguiente torneo.
+Juega un torneo corto contra los bots del proyecto. Busca tu bot en la
+clasificación: la columna `forfeits` tiene que ser **0**. Si no lo es, se ha
+equivocado de columna, ha fallado o se ha pasado de tiempo.
 
-**Cómo es el tablero que recibes**
+```bash
+ruff check players/custom
+```
 
-- `state` es una lista de filas, de **arriba abajo**; cada casilla vale `0`
-  (vacía), `1` (`X`) o `2` (`O`).
-- Tu ficha es `game.current_player(state)`.
-- No modifiques `state` ni des por hecho que el tablero mide 6×7.
+Revisa el estilo del código: es lo mismo que comprobará GitHub.
 
-**Reglas del torneo para tu bot**
+Y si quieres jugar tú contra él: `conecta-cuatro`, opción **2. Jugador vs Bot**.
 
-- Tienes **2 segundos para toda la partida**, no por jugada.
-- Una columna llena o inexistente, una excepción o pasarte de tiempo te hacen
-  **perder esa partida**, pero el torneo sigue.
+### Paso 6 · Envíalo con un Pull Request
 
-¿Quieres ir más lejos? Puedes heredar de `MinimaxBot` y escribir solo tu función
-de evaluación. Lo tienes explicado en la
-[API del jugador](docs/game/upload-a-bot/player-api.md), y en
-[enviar un jugador](docs/game/upload-a-bot/submit-a-player.md) está el proceso
-de Pull Request.
+```bash
+git add players/custom/zorro.py players/custom/zorro.yaml
+git commit -m "Nuevo bot: zorro"
+git push -u origin bot-zorro
+```
+
+En GitHub, en tu fork, pulsa **Compare & pull request** (hacia `main` de
+`grabifv/CONECTA_CUATRO`). La descripción viene con una lista de comprobación:
+rellénala.
+
+GitHub probará tu bot automáticamente (check **Custom players**). Si sale en
+rojo, abre el detalle, corrige, y haz `git push` de nuevo: el pull request se
+actualiza solo. Cuando lo revisemos y lo aceptemos, tu bot aparece en la web y
+entra en el siguiente torneo.
+
+### Reglas del torneo
+
+- ⏱️ **2 segundos para toda la partida**, no por jugada, medidos en los servidores
+  de GitHub, que son más lentos que tu ordenador. Déjate margen.
+- ❌ Una columna llena o inexistente, una excepción o pasarte de tiempo te hacen
+  **perder esa partida**; el torneo sigue.
+- 📦 Solo la biblioteca estándar de Python y `conecta_cuatro`: nada de `pip install`.
+- 🔒 Nada de red, ficheros, subprocesos, `eval` ni `exec`. Se revisa el código y
+  cualquier cosa sospechosa se rechaza.
+- 📁 Solo tus dos ficheros en `players/custom/`; un pull request que toque otros
+  ficheros no se acepta.
+
+### Si algo falla
+
+| Mensaje | Qué pasa | Solución |
+|---|---|---|
+| `already registered` | otro bot ya usa ese `get_name()` | elige otro nombre |
+| `has no class 'Zorro'` | la `class` del `.yaml` no coincide con la del `.py` | escríbelas igual, con mayúsculas |
+| `Player file not found` | el `file` del `.yaml` no coincide con el nombre del `.py` | revisa el nombre y la extensión |
+| `could not be created` | falta alguno de los cuatro `get_...` | copia la plantilla completa |
+| `illegal move` | has devuelto una columna llena o fuera del tablero | elige solo entre `game.legal_moves(state)` |
+| `mutated the board` | has cambiado `state` | trabaja sobre `game.apply_move(...)` o una copia |
+| `forfeits` > 0 por tiempo | tu bot piensa demasiado | baja la profundidad o simplifica |
+
+¿Quieres saber más? La [API del jugador](docs/game/upload-a-bot/player-api.md)
+explica todas las opciones, y la guía [enviar un jugador](docs/game/upload-a-bot/submit-a-player.md)
+detalla la revisión.
 
 ---
 
