@@ -1,0 +1,3 @@
+players:
+  - file: car_lu.py
+    class: CarLu
